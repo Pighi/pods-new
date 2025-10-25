@@ -1,16 +1,35 @@
 "use client";
+
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import RegisterModal from "@/components/RegisterModal";
 import SignInModal from "@/components/SignInModal";
 import { supabase } from "@/lib/supabaseClient";
 
-// Floating leaf component
-const Leaf = ({ size, left, top, duration, rotate }) => (
+// ---------- Types ----------
+type LeafProps = {
+  size: number;
+  left: string;
+  top: string;
+  duration: number;
+  rotate: number;
+};
+
+type Feature = {
+  title: string;
+  desc: string;
+};
+
+// ---------- Floating Leaf Component ----------
+const Leaf: React.FC<LeafProps> = ({ size, left, top, duration, rotate }) => (
   <motion.div
     className="absolute"
     style={{ width: size, height: size, left, top }}
-    animate={{ y: ["0%", "-30%", "0%"], x: ["0%", "20%", "0%"], rotate: [0, rotate, 0] }}
+    animate={{
+      y: ["0%", "-30%", "0%"],
+      x: ["0%", "20%", "0%"],
+      rotate: [0, rotate, 0],
+    }}
     transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
   >
     <svg viewBox="0 0 24 24" fill="#32CD32" className="w-full h-full">
@@ -19,14 +38,18 @@ const Leaf = ({ size, left, top, duration, rotate }) => (
   </motion.div>
 );
 
-// Fade-up variant for Framer Motion
-const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
+// ---------- Framer Motion Variants ----------
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
-export default function Home() {
+// ---------- Main Home Component ----------
+const Home: React.FC = () => {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
 
-  const leaves = [
+  const leaves: LeafProps[] = [
     { size: 40, left: "5%", top: "10%", duration: 12, rotate: 20 },
     { size: 50, left: "80%", top: "20%", duration: 16, rotate: -15 },
     { size: 35, left: "50%", top: "60%", duration: 8, rotate: 30 },
@@ -34,16 +57,16 @@ export default function Home() {
     { size: 25, left: "70%", top: "70%", duration: 10, rotate: -30 },
   ];
 
-  const features = [
+  const features: Feature[] = [
     { title: "Add Observations", desc: "Students can add detailed observations with photos for each assigned plant." },
     { title: "View Trends", desc: "Track plant growth over time and visualize trends through charts and statistics." },
-    { title: "Teacher Management", desc: "Teachers can assign plants, review submissions, and manage student progress efficiently." }
+    { title: "Teacher Management", desc: "Teachers can assign plants, review submissions, and manage student progress efficiently." },
   ];
 
-  const galleryImages = [
+  const galleryImages: string[] = [
     "https://images.unsplash.com/photo-1601576025022-6a2c1d92c489?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1596204970096-14245fd48b9e?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1623181746891-c0281f7e0fa4?auto=format&w=600&q=80"
+    "https://images.unsplash.com/photo-1623181746891-c0281f7e0fa4?auto=format&w=600&q=80",
   ];
 
   return (
@@ -70,8 +93,12 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="pt-24 min-h-screen bg-gradient-to-b from-green-100 via-green-200 to-green-100 flex flex-col justify-center items-center text-center p-4 relative z-10">
-        <motion.h2 className="text-2xl md:text-3xl font-semibold mb-2 text-green-700" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>Department of Floriculture</motion.h2>
-        <motion.h1 className="text-5xl md:text-6xl font-bold mb-4 text-green-900 leading-tight" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2 }}>Plant Observation & <br /> Data System</motion.h1>
+        <motion.h2 className="text-2xl md:text-3xl font-semibold mb-2 text-green-700" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+          Department of Floriculture
+        </motion.h2>
+        <motion.h1 className="text-5xl md:text-6xl font-bold mb-4 text-green-900 leading-tight" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2 }}>
+          Plant Observation & <br /> Data System
+        </motion.h1>
         <motion.p className="text-lg md:text-xl mb-8 max-w-2xl text-green-800" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4 }}>
           A web platform for floriculture students to record plant observations, track trends, and enhance learning through hands-on plant data management.
         </motion.p>
@@ -123,4 +150,6 @@ export default function Home() {
       <RegisterModal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} />
     </div>
   );
-}
+};
+
+export default Home;
