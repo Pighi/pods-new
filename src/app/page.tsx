@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import RegisterModal from "@/components/RegisterModal";
 import SignInModal from "@/components/SignInModal";
 import { supabase } from "@/lib/supabaseClient";
+import { User } from "@supabase/supabase-js";
 
 // ---------- Floating Leaf Component ----------
 interface LeafProps {
@@ -32,18 +33,18 @@ const Leaf: React.FC<LeafProps> = ({ size, left, top, duration, rotate }) => (
   </motion.div>
 );
 
-
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
 };
 
-const Home = () => {
+const Home: React.FC = () => {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
+  // Fetch user and role
   useEffect(() => {
     const fetchUserAndRole = async () => {
       const { data } = await supabase.auth.getUser();
@@ -56,30 +57,35 @@ const Home = () => {
           .select("role")
           .eq("id", currentUser.id)
           .single();
-
         if (!error && profileData) setRole(profileData.role);
       }
     };
 
     fetchUserAndRole();
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-      if (currentUser) {
-        supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", currentUser.id)
-          .single()
-          .then(({ data, error }) => {
-            if (!error && data) setRole(data.role);
-          });
-      } else {
-        setRole(null);
+        if (currentUser) {
+          supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", currentUser.id)
+            .single()
+            .then(({ data, error }) => {
+              if (!error && data) setRole(data.role);
+            });
+        } else {
+          setRole(null);
+        }
       }
-    });
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   const leaves = [
@@ -110,10 +116,11 @@ const Home = () => {
 
   return (
     <div className="font-sans text-gray-800 relative overflow-x-hidden">
-
       {/* Floating Leaves */}
       <div className="absolute top-0 left-0 w-full h-screen overflow-hidden pointer-events-none z-0">
-        {leaves.map((leaf, i) => <Leaf key={i} {...leaf} />)}
+        {leaves.map((leaf, i) => (
+          <Leaf key={i} {...leaf} />
+        ))}
       </div>
 
       {/* Navbar */}
@@ -127,14 +134,27 @@ const Home = () => {
             {user ? (
               <>
                 <span className="font-semibold text-green-900">{user.email}</span>
-                <button onClick={handleLogout} className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition">
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition"
+                >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <button onClick={() => setIsSignInOpen(true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Sign In</button>
-                <button onClick={() => setIsRegisterOpen(true)} className="px-4 py-2 bg-green-300 text-green-900 rounded-lg hover:bg-green-400 transition">Register</button>
+                <button
+                  onClick={() => setIsSignInOpen(true)}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setIsRegisterOpen(true)}
+                  className="px-4 py-2 bg-green-300 text-green-900 rounded-lg hover:bg-green-400 transition"
+                >
+                  Register
+                </button>
               </>
             )}
           </div>
@@ -143,13 +163,28 @@ const Home = () => {
 
       {/* Hero Section */}
       <section className="pt-24 min-h-screen bg-gradient-to-b from-green-100 via-green-200 to-green-100 flex flex-col justify-center items-center text-center p-4 relative z-10">
-        <motion.h2 className="text-2xl md:text-3xl font-semibold mb-2 text-green-700" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+        <motion.h2
+          className="text-2xl md:text-3xl font-semibold mb-2 text-green-700"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+        >
           Department of Floriculture
         </motion.h2>
-        <motion.h1 className="text-5xl md:text-6xl font-bold mb-4 text-green-900 leading-tight" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2 }}>
+        <motion.h1
+          className="text-5xl md:text-6xl font-bold mb-4 text-green-900 leading-tight"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2 }}
+        >
           Plant Observation & <br /> Data System
         </motion.h1>
-        <motion.p className="text-lg md:text-xl mb-8 max-w-2xl text-green-800" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4 }}>
+        <motion.p
+          className="text-lg md:text-xl mb-8 max-w-2xl text-green-800"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.4 }}
+        >
           A web platform for floriculture students to record plant observations, track trends, and enhance learning through hands-on plant data management.
         </motion.p>
 
@@ -159,7 +194,11 @@ const Home = () => {
             <a
               href={role === "teacher" ? "/teacher" : "#"}
               onClick={(e) => role !== "teacher" && e.preventDefault()}
-              className={`px-6 py-3 rounded-lg transition ${role === "teacher" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+              className={`px-6 py-3 rounded-lg transition ${
+                role === "teacher"
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
             >
               Teacher Access
             </a>
@@ -167,7 +206,11 @@ const Home = () => {
             <a
               href={role === "student" ? "/student" : "#"}
               onClick={(e) => role !== "student" && e.preventDefault()}
-              className={`px-6 py-3 rounded-lg transition ${role === "student" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+              className={`px-6 py-3 rounded-lg transition ${
+                role === "student"
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
             >
               Student Access
             </a>
@@ -175,7 +218,11 @@ const Home = () => {
             <a
               href={role === "admin" ? "/admin" : "#"}
               onClick={(e) => role !== "admin" && e.preventDefault()}
-              className={`px-6 py-3 rounded-lg transition ${role === "admin" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+              className={`px-6 py-3 rounded-lg transition ${
+                role === "admin"
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
             >
               Admin Access
             </a>
@@ -186,11 +233,24 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <motion.section className="py-16 px-4 bg-gradient-to-r from-green-50 via-green-100 to-green-50 text-center" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.2 } } }}>
+      <motion.section
+        className="py-16 px-4 bg-gradient-to-r from-green-50 via-green-100 to-green-50 text-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{
+          hidden: { opacity: 0, y: 20 },
+          visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.2 } },
+        }}
+      >
         <h2 className="text-4xl font-semibold mb-10 text-green-900">Features</h2>
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
           {features.map((feature, i) => (
-            <motion.div key={i} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition transform hover:-translate-y-2" variants={fadeUp}>
+            <motion.div
+              key={i}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition transform hover:-translate-y-2"
+              variants={fadeUp}
+            >
               <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
               <p>{feature.desc}</p>
             </motion.div>
@@ -199,17 +259,35 @@ const Home = () => {
       </motion.section>
 
       {/* Gallery Section */}
-      <motion.section className="py-16 px-4 bg-gradient-to-r from-green-100 via-green-200 to-green-100 text-center" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.2 } } }}>
+      <motion.section
+        className="py-16 px-4 bg-gradient-to-r from-green-100 via-green-200 to-green-100 text-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.2 } } }}
+      >
         <h2 className="text-4xl font-semibold mb-10 text-green-900">Gallery</h2>
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
           {galleryImages.map((url, i) => (
-            <motion.img key={i} src={url} alt={`Flower ${i + 1}`} className="w-full h-48 object-cover rounded-lg shadow hover:scale-105 transition-transform duration-500" variants={fadeUp} />
+            <motion.img
+              key={i}
+              src={url}
+              alt={`Flower ${i + 1}`}
+              className="w-full h-48 object-cover rounded-lg shadow hover:scale-105 transition-transform duration-500"
+              variants={fadeUp}
+            />
           ))}
         </div>
       </motion.section>
 
       {/* Info Section */}
-      <motion.section className="py-16 px-4 bg-gradient-to-r from-green-50 via-green-100 to-green-50 text-center" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+      <motion.section
+        className="py-16 px-4 bg-gradient-to-r from-green-50 via-green-100 to-green-50 text-center"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeUp}
+      >
         <h2 className="text-4xl font-semibold mb-6 text-green-900">About This Project</h2>
         <p className="max-w-3xl mx-auto text-lg text-green-800">
           PODS (Plant Observation & Data System) helps floriculture students systematically record plant observations. Upload photos, take notes, track trends, and let teachers manage learning efficiently.
