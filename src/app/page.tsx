@@ -57,38 +57,37 @@ const Home: React.FC = () => {
           .select("role")
           .eq("id", currentUser.id)
           .single();
+
         if (!error && profileData) setRole(profileData.role);
       }
     };
 
     fetchUserAndRole();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-        if (currentUser) {
-          supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", currentUser.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) setRole(data.role);
-            });
-        } else {
-          setRole(null);
-        }
+      if (currentUser) {
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", currentUser.id)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data) setRole(data.role);
+          });
+      } else {
+        setRole(null);
       }
-    );
+    });
 
     return () => {
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  const leaves = [
+  const leaves: LeafProps[] = [
     { size: 40, left: "5%", top: "10%", duration: 12, rotate: 20 },
     { size: 50, left: "80%", top: "20%", duration: 16, rotate: -15 },
     { size: 35, left: "50%", top: "60%", duration: 8, rotate: 30 },
