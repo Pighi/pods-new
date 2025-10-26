@@ -7,7 +7,15 @@ import SignInModal from "@/components/SignInModal";
 import { supabase } from "@/lib/supabaseClient";
 
 // ---------- Floating Leaf Component ----------
-const Leaf = ({ size, left, top, duration, rotate }) => (
+interface LeafProps {
+  size: number | string;
+  left: string;
+  top: string;
+  duration: number;
+  rotate: number;
+}
+
+const Leaf: React.FC<LeafProps> = ({ size, left, top, duration, rotate }) => (
   <motion.div
     className="absolute"
     style={{ width: size, height: size, left, top }}
@@ -23,6 +31,7 @@ const Leaf = ({ size, left, top, duration, rotate }) => (
     </svg>
   </motion.div>
 );
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
