@@ -1,27 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import RegisterModal from "@/components/RegisterModal";
 import SignInModal from "@/components/SignInModal";
 import { supabase } from "@/lib/supabaseClient";
 
-// ---------- Types ----------
-type LeafProps = {
-  size: number;
-  left: string;
-  top: string;
-  duration: number;
-  rotate: number;
-};
-
-type Feature = {
-  title: string;
-  desc: string;
-};
-
 // ---------- Floating Leaf Component ----------
-const Leaf: React.FC<LeafProps> = ({ size, left, top, duration, rotate }) => (
+const Leaf = ({ size, left, top, duration, rotate }) => (
   <motion.div
     className="absolute"
     style={{ width: size, height: size, left, top }}
@@ -32,24 +18,62 @@ const Leaf: React.FC<LeafProps> = ({ size, left, top, duration, rotate }) => (
     }}
     transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
   >
-    <svg viewBox="0 0 24 24" fill="#32CD32" className="w-full h-full">
+    <svg viewBox="0 0 24 24" fill="#5bcd32ff" className="w-full h-full">
       <path d="M12 2C8 5 2 12 12 22C22 12 16 5 12 2Z" />
     </svg>
   </motion.div>
 );
 
-// ---------- Framer Motion Variants ----------
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 },
 };
 
-// ---------- Main Home Component ----------
-const Home: React.FC = () => {
+const Home = () => {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
 
-  const leaves: LeafProps[] = [
+  useEffect(() => {
+    const fetchUserAndRole = async () => {
+      const { data } = await supabase.auth.getUser();
+      const currentUser = data?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: profileData, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", currentUser.id)
+          .single();
+
+        if (!error && profileData) setRole(profileData.role);
+      }
+    };
+
+    fetchUserAndRole();
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", currentUser.id)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data) setRole(data.role);
+          });
+      } else {
+        setRole(null);
+      }
+    });
+  }, []);
+
+  const leaves = [
     { size: 40, left: "5%", top: "10%", duration: 12, rotate: 20 },
     { size: 50, left: "80%", top: "20%", duration: 16, rotate: -15 },
     { size: 35, left: "50%", top: "60%", duration: 8, rotate: 30 },
@@ -57,17 +81,23 @@ const Home: React.FC = () => {
     { size: 25, left: "70%", top: "70%", duration: 10, rotate: -30 },
   ];
 
-  const features: Feature[] = [
+  const features = [
     { title: "Add Observations", desc: "Students can add detailed observations with photos for each assigned plant." },
     { title: "View Trends", desc: "Track plant growth over time and visualize trends through charts and statistics." },
     { title: "Teacher Management", desc: "Teachers can assign plants, review submissions, and manage student progress efficiently." },
   ];
 
-  const galleryImages: string[] = [
+  const galleryImages = [
     "https://images.unsplash.com/photo-1601576025022-6a2c1d92c489?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1596204970096-14245fd48b9e?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1623181746891-c0281f7e0fa4?auto=format&w=600&q=80",
   ];
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setRole(null);
+  };
 
   return (
     <div className="font-sans text-gray-800 relative overflow-x-hidden">
@@ -84,9 +114,20 @@ const Home: React.FC = () => {
             <span className="text-4xl">🌿</span>
             <span className="text-xl font-bold text-green-900">PODS</span>
           </div>
-          <div className="flex gap-4">
-            <button onClick={() => setIsSignInOpen(true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Sign In</button>
-            <button onClick={() => setIsRegisterOpen(true)} className="px-4 py-2 bg-green-300 text-green-900 rounded-lg hover:bg-green-400 transition">Register</button>
+          <div className="flex items-center gap-4">
+            {user ? (
+              <>
+                <span className="font-semibold text-green-900">{user.email}</span>
+                <button onClick={handleLogout} className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setIsSignInOpen(true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Sign In</button>
+                <button onClick={() => setIsRegisterOpen(true)} className="px-4 py-2 bg-green-300 text-green-900 rounded-lg hover:bg-green-400 transition">Register</button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -102,10 +143,37 @@ const Home: React.FC = () => {
         <motion.p className="text-lg md:text-xl mb-8 max-w-2xl text-green-800" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4 }}>
           A web platform for floriculture students to record plant observations, track trends, and enhance learning through hands-on plant data management.
         </motion.p>
-        <motion.div className="flex gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.6 }}>
-          <button onClick={() => setIsSignInOpen(true)} className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">Student / Teacher Login</button>
-          <button onClick={() => setIsRegisterOpen(true)} className="px-6 py-3 bg-green-300 text-green-900 rounded-lg hover:bg-green-400 transition">Register</button>
-        </motion.div>
+
+        {/* Role-Based Hero Buttons */}
+        {user ? (
+          <div className="flex flex-col md:flex-row gap-4 mt-6">
+            <a
+              href={role === "teacher" ? "/teacher" : "#"}
+              onClick={(e) => role !== "teacher" && e.preventDefault()}
+              className={`px-6 py-3 rounded-lg transition ${role === "teacher" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+            >
+              Teacher Access
+            </a>
+
+            <a
+              href={role === "student" ? "/student" : "#"}
+              onClick={(e) => role !== "student" && e.preventDefault()}
+              className={`px-6 py-3 rounded-lg transition ${role === "student" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+            >
+              Student Access
+            </a>
+
+            <a
+              href={role === "admin" ? "/admin" : "#"}
+              onClick={(e) => role !== "admin" && e.preventDefault()}
+              className={`px-6 py-3 rounded-lg transition ${role === "admin" ? "bg-green-500 text-white hover:bg-green-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+            >
+              Admin Access
+            </a>
+          </div>
+        ) : (
+          <p className="text-green-700 mt-4">Sign in to access your role-specific panel.</p>
+        )}
       </section>
 
       {/* Features Section */}
